@@ -2,25 +2,40 @@ package org.neo4j.tool;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.unsafe.batchinsert.*;
-import org.neo4j.unsafe.batchinsert.internal.*;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.neo4j.unsafe.batchinsert.BatchRelationship;
+import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
+import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
+import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
+import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -82,15 +97,17 @@ public class StoreCopy
         }
         if (!source.exists()) throw new IllegalArgumentException("Source Database does not exist " + source);
 
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Iterable kernelExtensions = Service.load(KernelExtensionFactory.class);
+//        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+//        Iterable kernelExtensions = Service.load(KernelExtensionFactory.class);
 
         Pair<Long, Long> highestIds = getHighestNodeId(source);
         String pageCacheSize = System.getProperty("dbms.pagecache.memory", "2G");
         BatchInserter targetDb = BatchInserters
                 .inserter(target, MapUtil.stringMap("dbms.pagecache.memory", pageCacheSize));
-        BatchInserter sourceDb = BatchInserters.inserter(source, fileSystem, MapUtil.stringMap("dbms.pagecache" +
-                ".memory", System.getProperty("dbms.pagecache.memory.source", pageCacheSize)), kernelExtensions);
+        BatchInserter sourceDb = BatchInserters.inserter(source, MapUtil.stringMap("dbms.pagecache.memory",
+                System.getProperty("dbms.pagecache.memory.source", pageCacheSize)));
+//        BatchInserter sourceDb = BatchInserters.inserter(source, fileSystem, MapUtil.stringMap("dbms.pagecache" +
+//                ".memory", System.getProperty("dbms.pagecache.memory.source", pageCacheSize)), kernelExtensions);
         Flusher flusher = getFlusher(sourceDb);
 
         logs = new PrintWriter(new FileWriter(new File(target, "store-copy.log")));
@@ -115,7 +132,7 @@ public class StoreCopy
         try {
             Field delegate = FileSystemClosingBatchInserter.class.getDeclaredField("delegate");
             delegate.setAccessible(true);
-            db = (BatchInserter)delegate.get(db);
+            db = (BatchInserter) delegate.get(db);
             Field field = BatchInserterImpl.class.getDeclaredField("recordAccess");
             field.setAccessible(true);
             final DirectRecordAccessSet recordAccessSet = (DirectRecordAccessSet) field.get(db);
@@ -192,8 +209,8 @@ public class StoreCopy
                     notFound++;
                 }
                 else {
-                    addLog(rel, "copy Relationship: " + (relId - 1) + "-[:" + type + "]" + "->?", "Exception:" +e
-                            .getClass()+"-> "+e.getMessage());
+                    addLog(rel, "copy Relationship: " + (relId - 1) + "-[:" + type + "]" + "->?", "Exception:" + e
+                            .getClass() + "-> " + e.getMessage());
                 }
             }
             if (relId % 10000 == 0) {
@@ -259,8 +276,8 @@ public class StoreCopy
             return true;
         }
         catch (Exception e) {
-            addLog(rel, "create Relationship: " + startNodeId + "-[:" + type + "]" + "->" + endNodeId,"Exception:" +e
-                    .getClass()+"-> "+ e.getMessage());
+            addLog(rel, "create Relationship: " + startNodeId + "-[:" + type + "]" + "->" + endNodeId, "Exception:" + e
+                    .getClass() + "-> " + e.getMessage());
             return false;
         }
     }
@@ -303,7 +320,7 @@ public class StoreCopy
                         .endsWith("not in use")) {
                     notFound++;
                 }
-                else addLog(node, "Exception: "+e.getClass()+"-> "+e.getMessage());
+                else addLog(node, "Exception: " + e.getClass() + "-> " + e.getMessage());
             }
             node++;
             if (node % 10000 == 0) {
@@ -346,7 +363,7 @@ public class StoreCopy
             }
         }
         Label[] l = labels.toArray(new Label[labels.size()]);
-        System.out.println("Labels: "+Arrays.toString(l));
+        System.out.println("Labels: " + Arrays.toString(l));
         return l;
     }
 
