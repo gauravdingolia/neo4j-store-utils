@@ -28,7 +28,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -196,6 +195,10 @@ public class StoreCopy
                 type = rel.getType().name();
                 if (!ignoreRelTypes.contains(type)) {
                     if (!createRelationship(targetDb, sourceDb, rel, ignoreProperties, copiedNodeIds)) {
+                        if (relId % 500000 == 0) {
+                            System.out.print("(" + rel.getStartNode() + ")-" + rel.getType() + "-(" + rel.getEndNode()
+                                    + ")");
+                        }
                         removed++;
                     }
                 }
@@ -262,8 +265,8 @@ public class StoreCopy
     {
         long startNodeId = copiedNodeIds.get(rel.getStartNode());
         long endNodeId = copiedNodeIds.get(rel.getEndNode());
+
         if (startNodeId == -1L || endNodeId == -1L) {
-            System.out.println("Removing because of id -1");
             return false;
         }
         final RelationshipType type = rel.getType();
@@ -338,6 +341,7 @@ public class StoreCopy
                 .printf("%n copying of %d node records took %d seconds (%d rec/s). Unused Records %d (%d%%). Removed " +
                                 "Records %d (%d%%).%n",
                         node, time, node / time, notFound, percent(notFound, node), removed, percent(removed, node));
+        System.out.println("Copied nodes map size: " + copiedNodes.size());
         return copiedNodes;
     }
 
