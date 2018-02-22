@@ -38,7 +38,7 @@ echo "Please note that you will need this memory ($CACHE + $CACHE_SRC + $HEAP) a
 # heap config
 export MAVEN_OPTS="-Xmx$HEAP -Xms$HEAP -XX:+UseG1GC"
 
-mvn clean compile exec:java -P${EDITION} -e -Dexec.mainClass="org.neo4j.tool.StoreCopy" -Ddbms.pagecache.memory=$CACHE -Ddbms.pagecache.memory.source=$CACHE_SRC \
+mvn clean compile exec:java -P${EDITION} -e -Dexec.mainClass="org.neo4j.tool.StoreCopy" -Ddbms.allow_format_migration=true -Ddbms.pagecache.memory=$CACHE -Ddbms.pagecache.memory.source=$CACHE_SRC \
       -Dexec.args="$SRC $DST $SKIP_RELS $SKIP_PROPS $SKIP_LABELS $DELETE_NODES $KEEP_NODE_IDS"
 
 #-Dneo4j.version=2.3.0
