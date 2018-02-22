@@ -362,9 +362,7 @@ public class StoreCopy
                 }
             }
         }
-        Label[] l = labels.toArray(new Label[labels.size()]);
-        System.out.println("Labels: " + Arrays.toString(l));
-        return l;
+        return labels.toArray(new Label[labels.size()]);
     }
 
     private static Map<String, Object> getProperties(Map<String, Object> pc, Set<String> ignoreProperties)
