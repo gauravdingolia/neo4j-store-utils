@@ -29,6 +29,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -329,7 +330,7 @@ public class StoreCopy
                         .endsWith("not in use")) {
                     notFound++;
                 }
-                else addLog(node, "Exception: " + e.getClass() + "-> " + e.getMessage());
+                else addLog(node, "Exception: " + Arrays.toString(e.getStackTrace()) + "-> " + e.getMessage());
             }
             node++;
             if (node % 10000 == 0) {
@@ -363,8 +364,8 @@ public class StoreCopy
     private static Label[] labelsArray(BatchInserter db, long node, Set<String> ignoreLabels)
     {
         Iterable<Label> iterable= db.getNodeLabels(node);
-        if(iterable == null) return new Label[0];
-        Collection<Label> labels = Iterables.asCollection(db.getNodeLabels(node));
+        if(iterable == null) return NO_LABELS;
+        Collection<Label> labels = Iterables.asCollection(iterable);
         if (labels.isEmpty()) return NO_LABELS;
         if (ignoreLabels != null && !ignoreLabels.isEmpty()) {
             for (Iterator<Label> it = labels.iterator(); it.hasNext(); ) {
