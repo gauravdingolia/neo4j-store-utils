@@ -2,6 +2,7 @@ package org.neo4j.tool;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
@@ -305,6 +306,8 @@ public class StoreCopy
                     else {
                         long newNodeId = node;
                         if (stableNodeIds) {
+                            if (node % 500000 == 0)
+                                System.out.print("(" + node + "," + newNodeId + ") ");
                             targetDb.createNode(node, getProperties(sourceDb.getNodeProperties(node), ignoreProperties),
                                     labelsArray(sourceDb, node, ignoreLabels));
                         }
@@ -313,8 +316,7 @@ public class StoreCopy
                                     .createNode(getProperties(sourceDb.getNodeProperties(node), ignoreProperties),
                                             labelsArray(sourceDb, node, ignoreLabels));
                         }
-                        if (node % 500000 == 0)
-                            System.out.print("(" + node + "," + newNodeId + ") ");
+
                         copiedNodes.put(node, newNodeId);
                     }
                 }
@@ -360,9 +362,11 @@ public class StoreCopy
 
     private static Label[] labelsArray(BatchInserter db, long node, Set<String> ignoreLabels)
     {
+        Iterable<Label> iterable= db.getNodeLabels(node);
+        if(iterable == null) return new Label[0];
         Collection<Label> labels = Iterables.asCollection(db.getNodeLabels(node));
         if (labels.isEmpty()) return NO_LABELS;
-        if (!ignoreLabels.isEmpty()) {
+        if (ignoreLabels != null && !ignoreLabels.isEmpty()) {
             for (Iterator<Label> it = labels.iterator(); it.hasNext(); ) {
                 Label label = it.next();
                 if (ignoreLabels.contains(label.name())) {
