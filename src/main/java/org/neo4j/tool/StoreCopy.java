@@ -351,7 +351,7 @@ public class StoreCopy
 
     private static boolean labelInSet(Iterable<Label> nodeLabels, Set<String> labelSet)
     {
-        if (labelSet == null || labelSet.isEmpty()) return false;
+        if (labelSet == null || labelSet.isEmpty() || nodeLabels == null) return false;
         for (Label nodeLabel : nodeLabels) {
             if (labelSet.contains(nodeLabel.name())) return true;
         }
@@ -375,8 +375,8 @@ public class StoreCopy
 
     private static Map<String, Object> getProperties(Map<String, Object> pc, Set<String> ignoreProperties)
     {
-        if (pc.isEmpty()) return Collections.emptyMap();
-        if (ignoreProperties.isEmpty()) return pc;
+        if (pc == null || pc.isEmpty()) return Collections.emptyMap();
+        if (ignoreProperties == null || ignoreProperties.isEmpty()) return pc;
         pc.keySet().removeAll(ignoreProperties);
         return pc;
     }
