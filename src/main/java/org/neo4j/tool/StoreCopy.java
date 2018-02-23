@@ -124,6 +124,8 @@ public class StoreCopy
         }
         logs.close();
         copyIndex(source, target);
+        System.out.println("Finished!!!");
+        System.exit(0);
     }
 
     private static Flusher getFlusher(BatchInserter db)
@@ -311,6 +313,8 @@ public class StoreCopy
                                     .createNode(getProperties(sourceDb.getNodeProperties(node), ignoreProperties),
                                             labelsArray(sourceDb, node, ignoreLabels));
                         }
+                        if (node % 500000 == 0)
+                            System.out.print("(" + node + "," + newNodeId + ") ");
                         copiedNodes.put(node, newNodeId);
                     }
                 }
