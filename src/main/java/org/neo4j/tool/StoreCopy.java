@@ -2,7 +2,6 @@ package org.neo4j.tool;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
@@ -71,7 +70,7 @@ public class StoreCopy
                         sourceDir, targetDir, ignoreRelTypes, ignoreProperties, ignoreLabels, deleteNodesWithLabels,
                         keepNodeIds);
         copyStore(sourceDir, targetDir, ignoreRelTypes, ignoreProperties, ignoreLabels, deleteNodesWithLabels,
-                keepNodeIds);
+                keepNodeIds, properties);
     }
 
     private static String getArgument(String[] args, int index, Properties properties, String key)
@@ -87,7 +86,8 @@ public class StoreCopy
     }
 
     private static void copyStore(String sourceDir, String targetDir, Set<String> ignoreRelTypes, Set<String>
-            ignoreProperties, Set<String> ignoreLabels, Set<String> deleteNodesWithLabels, boolean stableNodeIds)
+            ignoreProperties, Set<String> ignoreLabels, Set<String> deleteNodesWithLabels, boolean stableNodeIds,
+            Properties properties)
             throws Exception
     {
         final File target = new File(targetDir);
@@ -101,14 +101,16 @@ public class StoreCopy
 //        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 //        Iterable kernelExtensions = Service.load(KernelExtensionFactory.class);
 
+
         Pair<Long, Long> highestIds = getHighestNodeId(source);
-        String pageCacheSize = System.getProperty("dbms.pagecache.memory", "2G");
+        String pageCacheSize = properties
+                .getProperty("dbms.pagecache.memory", System.getProperty("dbms.pagecache.memory", "2G"));
+        String pageSize = properties.getProperty("dbms.pagecache.memory.source", pageCacheSize);
         BatchInserter targetDb = BatchInserters
                 .inserter(target, MapUtil.stringMap("dbms.pagecache.memory", pageCacheSize));
         BatchInserter sourceDb = BatchInserters.inserter(source, MapUtil.stringMap("dbms.pagecache.memory",
-                System.getProperty("dbms.pagecache.memory.source", pageCacheSize)));
-//        BatchInserter sourceDb = BatchInserters.inserter(source, fileSystem, MapUtil.stringMap("dbms.pagecache" +
-//                ".memory", System.getProperty("dbms.pagecache.memory.source", pageCacheSize)), kernelExtensions);
+                properties.getProperty("dbms.pagecache.memory.source", pageCacheSize)));
+
         Flusher flusher = getFlusher(sourceDb);
 
         logs = new PrintWriter(new FileWriter(new File(target, "store-copy.log")));
@@ -363,8 +365,8 @@ public class StoreCopy
 
     private static Label[] labelsArray(BatchInserter db, long node, Set<String> ignoreLabels)
     {
-        Iterable<Label> iterable= db.getNodeLabels(node);
-        if(iterable == null) return NO_LABELS;
+        Iterable<Label> iterable = db.getNodeLabels(node);
+        if (iterable == null) return NO_LABELS;
         Collection<Label> labels = Iterables.asCollection(iterable);
         if (labels.isEmpty()) return NO_LABELS;
         if (ignoreLabels != null && !ignoreLabels.isEmpty()) {
